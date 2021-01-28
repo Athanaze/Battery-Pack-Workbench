@@ -1,5 +1,6 @@
 # Battery Pack Workbench
 
+Workbench dedicated to the creation of battery packs in FreeCAD. Mainly focused on 18650-based battery packs.
 
 ## Preferences
 
