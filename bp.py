@@ -10,7 +10,8 @@ class Bp():
 
 class Cell():
     
-    # all args are str except the price and the weight which are floating point number
+    # all args are str except the price and the weight
+    # which are floating point number
     
     def __init__(brand, model, capacity, price, weight, notes, color):
         self.brand = brand

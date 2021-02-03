@@ -74,7 +74,7 @@ Samsung,ICR18650-22E,2200 (2.75V),4.4,1.1 (2.2),INR / NMC (LiNiMnCoO2),Teal,Whit
 Samsung,ICR18650-22B,2200 (2.75V),?,?,?,Teal,Blue,,,,,
 ,,,,,,Blue / Green (Light),Blue,,,,,
 Samsung,INR18650-13Q,1300 (2.5V),15 (30 Pulse),0.91 (4),?,Teal,White,,Data Sheet,,,
-Panasonic,CGR18650D,2400 (3V),4.5,1.645,ICR / LCO (LiCoO2),Teal (Light),White,,Data Sheet,Data Sheet Backup,,
+Panasonic,CGR18650D,2400 (3V),4.5,1.645,ICR / LCO (LiCoO2),Teal,White,,Data Sheet,Data Sheet Backup,,
 Samsung,INR18650-20R,2000 (2.5V),20,1 (4),IMR / LMO (LiMn2O4),Teal,White,,Data Sheet,Data Sheet Backup,lygte-info.dk,
 Samsung,INR18650-20Q,2000 (2.5),15,1 (? 3.6),IMR / LMO (LiMn2O4),Teal,White,,Data Sheet,Data Sheet Backup,lygte-info.dk,
 Samsung,INR18650-15R,1500 (2.5V),? 10 (18),0.75 (4),?,Teal,White,,,,Alibaba Source,"Only chinese source. Teal color 15R,15Q and Green 15Q possibly identical. "
