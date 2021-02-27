@@ -1,10 +1,13 @@
 from PySide import QtGui, QtCore
 from completerCreator import get_completer
-import FreeCAD
-import FreeCADGui
+import FreeCAD as App
+import FreeCADGui as Gui
 import batteryPackUtils as bpUtils
 import Part
-import Cell
+from Cell import Cell
+
+BATTERY_PACK_DEFAULT_PART_LABEL = "Battery pack"
+
 class BatteryPackDialog(QtGui.QDialog):
 
     def __init__(self, fdir):
@@ -27,21 +30,12 @@ class BatteryPackDialog(QtGui.QDialog):
         self.qSpinBox_n_cells_in_parallel = QtGui.QSpinBox()
         mainLayout.addWidget(self.qSpinBox_n_cells_in_parallel)
 
-        mainLayout.addWidget(QtGui.QLabel("Number of cells in the x axis of the pack"))
-        self.qSpinBox_n_cells_in_width = QtGui.QSpinBox()
-        mainLayout.addWidget(self.qSpinBox_n_cells_in_width)
-
-        mainLayout.addWidget(QtGui.QLabel("Number of cells in the y axis of the pack"))
-        self.qSpinBox_n_cells_in_height = QtGui.QSpinBox()
-        mainLayout.addWidget(self.qSpinBox_n_cells_in_height)
-
         mainLayout.addWidget(QtGui.QLabel("Space between cells in mm"))
         self.qSpinBox_space_cells = QtGui.QSpinBox()
         mainLayout.addWidget(self.qSpinBox_space_cells)
 
         option1Button = QtGui.QPushButton("Create pack with this cell")
         option1Button.clicked.connect(self.createPack)
-        
         
         mainLayout.addWidget(option1Button)
 
@@ -60,35 +54,59 @@ class BatteryPackDialog(QtGui.QDialog):
         return lineEdit
     
     def createPack(self):
-        self.n_cells_in_series = self.qSpinBox_n_cells_in_series.value()
-        self.n_cells_in_parallel = self.qSpinBox_n_cells_in_parallel.value()
-        self.n_cells_in_width = self.qSpinBox_n_cells_in_width.value()
-        self.n_cells_in_height = self.qSpinBox_n_cells_in_height.value()
-        self.space_between_cells = self.qSpinBox_space_cells.value()
-        self.cell = Cell.Cell(self.model.text(), self.freecad_dir)
+        s = self.qSpinBox_n_cells_in_series.value()
+        p = self.qSpinBox_n_cells_in_parallel.value()
+
+        self.cell = Cell(self.model.text(), self.freecad_dir)
+        # For now, n cells in series = width, n cells in para = length
+        n_cells_in_width = s
+        n_cells_in_height = p
+
+        # /!\ space_between_cells must be a STRING formatted like so : '1 mm'
+        space_between_cells = str(self.qSpinBox_space_cells.value()) + " mm"
+
+        App.ActiveDocument.recompute()
+        prop = 'App::Property'
+        App.activeDocument().Tip = App.activeDocument().addObject('App::Part','Part')
+        App.activeDocument().Part.addProperty(prop+'Length', 'Width', 'Dimensions', 'Battery pack width').Width = '10 mm'
+        App.activeDocument().Part.Label = BATTERY_PACK_DEFAULT_PART_LABEL
+        App.activeDocument().Part.addProperty(prop+'Integer', 'S', 'Cells arrangement', 'Cells in series').S = s
+        App.activeDocument().Part.addProperty(prop+'Integer', 'P', 'Cells arrangement', 'Cells in parallel').P = p
+        App.activeDocument().Part.addProperty(
+            prop+'Length',
+            'space_between_cells',
+            'Cells arrangement',
+            'Space between cells'
+        ).space_between_cells = space_between_cells
+
+        App.activeDocument().Part.addProperty(prop+'String', 'cell', 'Cell', 'Model of Cell used').cell = self.model.text()
+        
+        
+        Gui.activateView('Gui::View3DInventor', True)
+        Gui.activeView().setActiveObject('part', App.activeDocument().Part)
+        App.ActiveDocument.recompute()
+
         # Dimensions in mm
         # For now, harcoded for 18650 cells
         radius = 9
         height = 65
 
-        for w in range(self.n_cells_in_width):
+        for w in range(n_cells_in_width):
             self.create3dCell(radius, height, w, True)
-            FreeCAD.ActiveDocument.recompute()
+            App.ActiveDocument.recompute()
         
-        for h in range(self.n_cells_in_height):
+        for h in range(n_cells_in_height):
             self.create3dCell(radius, height, h, True)
-            FreeCAD.ActiveDocument.recompute()
+            App.ActiveDocument.recompute()
         
-        
-        
-        FreeCADGui.SendMsgToActiveView("ViewFit")
-        FreeCAD.ActiveDocument.recompute()
+        Gui.SendMsgToActiveView("ViewFit")
+        App.ActiveDocument.recompute()
 
         self.close()
     
     # If in width, widthOrHeight = True, otherwise False
     def create3dCell(self, radius, height, index, widthOrHeight):
-        doc = FreeCAD.ActiveDocument
+        doc = App.ActiveDocument
         label = "Cell-w-"+str(index)
         doc.addObject("Part::Cylinder","Cylinder")
         doc.ActiveObject.Label = label
@@ -96,7 +114,7 @@ class BatteryPackDialog(QtGui.QDialog):
         print(label)
         doc.ActiveObject.Radius = str(radius)+' mm'
         doc.ActiveObject.Height = str(height)+' mm'
-        
+        ''''
         doc.ActiveObject.getObject(label).ShapeColor = self.cell.getShapeColor()
 
         doc.ActiveObject.getObject(label).ShapeColor = self.cell.getShapeColor()
@@ -107,7 +125,7 @@ class BatteryPackDialog(QtGui.QDialog):
         else:
             self.doc.getObject(label).Placement = App.Placement(App.Vector(0,(index*radius)+self.space_between_cells,0),App.Rotation(App.Vector(0,0,1),0))
 
-
+        '''
     def makeStrList(self):
         li = [
             self.brand,
@@ -131,4 +149,3 @@ class BatteryPackDialog(QtGui.QDialog):
             s+=a+","
         
         return s[:-1]
-
