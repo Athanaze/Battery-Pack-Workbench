@@ -1,4 +1,4 @@
-Brand,Model,Capacity (mAh),"Current A (continuous, datasheet)","Current A (continuous, suggested/tested)",Watt hours (theoretical),"Price (Euro, nkon.nl)",Wh/€,"Price, max. Wholesale Discount(Euro, nkon.nl)",Wholesale Qty,Wh/€ Wholesale,max. Weight in g (Datasheet),Weight per 1000Wh,Number of cells per 1000Wh,Notes
+Brand,Model,Capacity (mAh),"Current A (continuous, datasheet)","Current A (continuous, suggested/tested)",Watt hours (theoretical),Price (Euro - nkon.nl),Wh/€,"Price, max. Wholesale Discount(Euro, nkon.nl)",Wholesale Qty,Wh/€ Wholesale,max. Weight in g (Datasheet),Weight per 1000Wh,Number of cells per 1000Wh,Notes
 LG,ICR18650-S3,2200,3,,7.92,,#DIV/0!,,,#DIV/0!,47.0,5.93 Kg,126,
 LG,ICR18650-MF1,2150,10,,7.85,€2.25,3.49,€1.70,600,4.62,44.0,5.61 Kg,127,
 BG,INR18650-26R,2600,12.5,,9.62,€1.89,5.09,€1.49,720,6.46,50.0,5.20 Kg,104,weight unknown

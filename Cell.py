@@ -70,13 +70,14 @@ class Cell:
     # Construction by the Model number.
     # Mainly assigns the values from the .csv and put some default values when needed
     def __init__(self, model_number, freecad_dir):
-        found = False
         
+
+        # IDENTIFICATION REF
+        found = False    
         with open(freecad_dir+"Mod/battery_pack/identification_ref.csv", newline='') as csvfile:
             reader = csv.DictReader(csvfile)
             for row in reader:
                 if row['Model (Markings)'] == model_number:
-                    print("Cell found in the database")
                     found = True
                     self.brand = row['Brand']
                     self.model = row['Model (Markings)']
@@ -109,7 +110,24 @@ class Cell:
         if not found:
             print(model_number)
             print("ERROR : could not find the matching model number in identification_ref.csv")
-    
+
+        print("ouais")
+        # PRICE PERFORMANCE
+        found = False    
+        with open(freecad_dir+"Mod/battery_pack/price_performance.csv", newline='') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                if row['Model'] == model_number:
+                    found = True                    
+                    self.price = row['Price (Euro - nkon.nl)']
+                    self.weight = row['max. Weight in g (Datasheet)']
+                    self.perf_notes = row['Notes']
+
+        if not found:
+            print(model_number)
+            print("ERROR : could not find the matching model number in price_performance.csv")
+
+
     def getShapeColor(self):
         try:
             return COLORS[self.colorWrap]
@@ -117,4 +135,4 @@ class Cell:
             return COLORS[preferences.DEFAULT_CELL_COLOR]
             
     def getLineColor(self):
-        return COLORS[preferences.DEFAULT_CELL_COLOR]
+        return COLORS[preferences.DEFAULT_CELL_LINE_COLOR]

@@ -100,11 +100,21 @@ class BatteryPackDialog(QtGui.QDialog):
             App.ActiveDocument.recompute()
         
         # Creates the nickel stripS connecting all the cells in series
-        length = (n_cells_in_width*((radius*2)) ) + n_cells_in_width*(space)
+        length = ( (n_cells_in_width*((radius*2)) ) + n_cells_in_width*(space) ) - space
 
         self.part.total_nickel_strip_length = 2*length # top and bottom strips
         self.create_nickel_strips(length, radius, height, placement_of_last_cell)
+        '''
+        nc = n_cells_in_width*n_cells_in_height
+        self.part.total_cells_weight = self.cell.weight*nc
+        self.part.total_battery_holders_weight = BATTERY_HOLDER_WEIGHT*nc*2 # One holder on top, one on the bottom
+        self.part.total_cells_price = self.cell.price*nc
+        
+        # Volume * weight per mm³
+        self.part.total_nickel_strip_weight = self.part.total_nickel_strip_length*NICKEL_STRIP_WIDTH*NICKEL_STRIP_HEIGHT*NICKEL_STRIP_WEIGHT_PER_MM3
 
+        self.part.total_weight = self.part.total_nickel_strip_weight + self.part.total_battery_holders_weight + self.part.total_cells_weight
+        '''
         Gui.SendMsgToActiveView("ViewFit")
         App.ActiveDocument.recompute()
 
@@ -137,14 +147,16 @@ class BatteryPackDialog(QtGui.QDialog):
         cell_object = doc.addObject("Part::Cylinder","Cylinder")
         cell_object.Label = label
         
-        print(label)
         cell_object.Radius = str(radius)+' mm'
         cell_object.Height = str(height)+' mm'
         
         if s < 0.0:
             print("The space between each cell should not be negative !")
 
-        placement = App.Placement(App.Vector(float(index*radius*2)+s,0,0),App.Rotation(App.Vector(0,0,1),0))
+        placement = App.Placement(
+            App.Vector(float( index*((radius*2)+s) ),0,0),
+            App.Rotation(App.Vector(0,0,1),0)
+        )
         cell_object.Placement = placement
         
         cell_object.ViewObject.LineColor = cell_object.ViewObject.PointColor = self.cell.getLineColor()

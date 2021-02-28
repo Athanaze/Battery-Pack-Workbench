@@ -8,16 +8,18 @@ class BatteryPackWorkbench (Workbench):
     # executed when FreeCAD starts
     def Initialize(self):
         #import MyModuleA, MyModuleB # import here all the needed files that create your FreeCAD commands
-        self.list = ["Battery Pack command", "New Cell command"] # A list of command names created in the line above
+        self.list = ["Battery Pack command", "New Cell command", "Chart command"] # A list of command names created in the line above
         self.appendToolbar("My Commands",self.list) # creates a new toolbar with your commands
         self.appendMenu("Batter Pack",self.list) # creates a new menu
     
     # executed when the workbench is activated
     def Activated(self):
+        print("WORKBENCH ACTIVATED")
         return
 
     # executed when the workbench is deactivated
     def Deactivated(self):
+        print("WORKBENCH DE-ACTIVATED")
         return
 
     def ContextMenu(self, recipient):
@@ -65,11 +67,10 @@ class Command_Class():
         form.exec_()
 
         return
-
+    
+    # Active only if there is an active document
     def IsActive(self):
-        """Here you can define if the command must be active or not (greyed) if certain conditions
-        are met or not. This function is optional."""
-        return True
+        return True#return FreeCAD.activeDocument()
 
 class NewCellCommandClass():
     def getIcon(self, icon_name):
@@ -93,8 +94,35 @@ class NewCellCommandClass():
 
         return
 
+    # Active only if there is an active document
+    def IsActive(self):
+        return True#FreeCAD.activeDocument()
+
+class ChartCommandClass():
+    def getIcon(self, icon_name):
+        return 
+
+    def GetResources(self):
+        return {'Pixmap'  : FreeCAD.getUserAppDataDir()+"Mod/battery_pack/chart.svg",
+                
+                'MenuText': "Chart",
+                'ToolTip' : "Chart"}
+
+    def Activated(self):
+        from PySide import QtCore
+        from PySide import QtGui
+        import chartDialog
+
+        form = chartDialog.ShowChart(FreeCAD.getUserAppDataDir())
+        form.exec_()
+        print(form.retStatus)
+
+        return
+
+    # Active only if there is an active document
     def IsActive(self):
         return True
 
 FreeCADGui.addCommand('Battery Pack command',Command_Class())
 FreeCADGui.addCommand('New Cell command',NewCellCommandClass())
+FreeCADGui.addCommand('Chart command',ChartCommandClass())

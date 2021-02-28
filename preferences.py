@@ -12,3 +12,13 @@ NICKEL_STRIP_LINE_POINT_COLOR = (0.0, 0.0, 0.0, 0.0)
 # Unit : mm
 NICKEL_STRIP_WIDTH = 8
 NICKEL_STRIP_HEIGHT = 0.15 
+
+# Unit : g
+NICKEL_STRIP_WEIGHT_PER_MM3 = 0.00857
+
+
+# Note : For now, these are made up, to see if the system works
+# Unit : g
+BATTERY_HOLDER_WEIGHT = 0.5
+T_CONNECTOR_WEIGHT = 1.2
+XT_60_CONNECTOR_WEIGHT = 1.5

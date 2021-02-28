@@ -2,7 +2,7 @@
 
 Workbench dedicated to the creation of battery packs in FreeCAD. Mainly focused on 18650-based battery packs.
 
-Only generates battery pack as a "ortholinear grid" of cells.
+Only generates battery pack as an "ortholinear grid" of cells.
 
 ## Use cases
 
@@ -18,6 +18,11 @@ The easiest way to load the new preferences is to restart freecad
 ## Usage on non-manjaro platforms/distros : bugs, errors
 
 I only use manjaro so you might get some errors concerning the path of scripts, assets, etc... or other issues when running this addon on other platforms/distros. If you are able to fix those, I would happily include the fixes in the project.
+
+## TODO
+
+- Pie graph for the weight : 90% cells, 8% holders, 2% nickel strip...
+- Graphs to compare differents battery packs (select them first, then click "Comparison")
 
 ## Note on the included models
 
