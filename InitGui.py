@@ -5,20 +5,19 @@ class BatteryPackWorkbench (Workbench):
     ToolTip = "A description of Battery Pack Workbench"
     Icon =FreeCAD.getUserAppDataDir()+"Mod/battery_pack/logo.svg"
 
+    # executed when FreeCAD starts
     def Initialize(self):
-        """This function is executed when FreeCAD starts"""
         #import MyModuleA, MyModuleB # import here all the needed files that create your FreeCAD commands
         self.list = ["Battery Pack command", "New Cell command"] # A list of command names created in the line above
         self.appendToolbar("My Commands",self.list) # creates a new toolbar with your commands
         self.appendMenu("Batter Pack",self.list) # creates a new menu
-        self.appendMenu(["An existing Menu","My submenu"],self.list) # appends a submenu to an existing menu
-
+    
+    # executed when the workbench is activated
     def Activated(self):
-        """This function is executed when the workbench is activated"""
         return
 
+    # executed when the workbench is deactivated
     def Deactivated(self):
-        """This function is executed when the workbench is deactivated"""
         return
 
     def ContextMenu(self, recipient):

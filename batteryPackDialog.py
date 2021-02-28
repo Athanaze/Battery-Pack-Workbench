@@ -5,6 +5,7 @@ import FreeCADGui as Gui
 import batteryPackUtils as bpUtils
 import Part
 from Cell import Cell
+from preferences import *
 
 BATTERY_PACK_DEFAULT_PART_LABEL = "Battery pack"
 
@@ -63,69 +64,94 @@ class BatteryPackDialog(QtGui.QDialog):
         n_cells_in_height = p
 
         # /!\ space_between_cells must be a STRING formatted like so : '1 mm'
-        space_between_cells = str(self.qSpinBox_space_cells.value()) + " mm"
+        self.space_between_cells = str(self.qSpinBox_space_cells.value()) + " mm"
 
         App.ActiveDocument.recompute()
         prop = 'App::Property'
-        App.activeDocument().Tip = App.activeDocument().addObject('App::Part','Part')
-        App.activeDocument().Part.addProperty(prop+'Length', 'Width', 'Dimensions', 'Battery pack width').Width = '10 mm'
-        App.activeDocument().Part.Label = BATTERY_PACK_DEFAULT_PART_LABEL
-        App.activeDocument().Part.addProperty(prop+'Integer', 'S', 'Cells arrangement', 'Cells in series').S = s
-        App.activeDocument().Part.addProperty(prop+'Integer', 'P', 'Cells arrangement', 'Cells in parallel').P = p
-        App.activeDocument().Part.addProperty(
+        #App.activeDocument().Tip
+        self.part = App.activeDocument().addObject('App::Part',BATTERY_PACK_DEFAULT_PART_LABEL)
+        self.part.addProperty(prop+'Length', 'Width', 'Dimensions', 'Battery pack width').Width = '10 mm'
+        self.part.addProperty(prop+'Integer', 'S', 'Cells arrangement', 'Cells in series').S = s
+        self.part.addProperty(prop+'Integer', 'P', 'Cells arrangement', 'Cells in parallel').P = p
+        self.part.addProperty(
             prop+'Length',
             'space_between_cells',
             'Cells arrangement',
             'Space between cells'
-        ).space_between_cells = space_between_cells
-
-        App.activeDocument().Part.addProperty(prop+'String', 'cell', 'Cell', 'Model of Cell used').cell = self.model.text()
+        ).space_between_cells = self.space_between_cells
+        
+        # Default value, will change when we set the number of cells, the space between the cells, etc...
+        self.part.addProperty(prop+'Length', 'total_nickel_strip_length', "Connections", "Total nickel strip length").total_nickel_strip_length = 32.0
+        self.part.addProperty(prop+'String', 'cell', 'Cell', 'Model of Cell used').cell = self.model.text()
         
         
         Gui.activateView('Gui::View3DInventor', True)
-        Gui.activeView().setActiveObject('part', App.activeDocument().Part)
+        Gui.activeView().setActiveObject('part', self.part)
         App.ActiveDocument.recompute()
 
         # Dimensions in mm
         # For now, harcoded for 18650 cells
         radius = 9
         height = 65
+        space = float(self.space_between_cells.split(" ")[0])
 
         for w in range(n_cells_in_width):
-            self.create3dCell(radius, height, w, True)
+            placement_of_last_cell = self.create3dCell(radius, height, w, space)
             App.ActiveDocument.recompute()
         
-        for h in range(n_cells_in_height):
-            self.create3dCell(radius, height, h, True)
-            App.ActiveDocument.recompute()
-        
+        # Creates the nickel stripS connecting all the cells in series
+        length = (n_cells_in_width*((radius*2)) ) + n_cells_in_width*(space)
+
+        self.part.total_nickel_strip_length = 2*length # top and bottom strips
+        self.create_nickel_strips(length, radius, height, placement_of_last_cell)
+
         Gui.SendMsgToActiveView("ViewFit")
         App.ActiveDocument.recompute()
 
         self.close()
+
+    def create_nickel_strips(self, length, radius, height, placement_of_last_cell):
+
+        top_strip = self.setup_nickel_strip("Nickel_Strip_top", length, radius, placement_of_last_cell)
+        top_strip.Placement.move(App.Vector(0, 0, -NICKEL_STRIP_HEIGHT))
+
+        bottom_strip = self.setup_nickel_strip("Nickel_Strip_bottom", length, radius, placement_of_last_cell)
+        bottom_strip.Placement.move(App.Vector(0, 0, height+NICKEL_STRIP_HEIGHT))
     
-    # If in width, widthOrHeight = True, otherwise False
-    def create3dCell(self, radius, height, index, widthOrHeight):
+    def setup_nickel_strip(self, name, length, radius, placement):
+        nickel_strip = App.ActiveDocument.addObject("Part::Box",name)
+        nickel_strip.ViewObject.LineColor = nickel_strip.ViewObject.PointColor = NICKEL_STRIP_LINE_POINT_COLOR
+        nickel_strip.ViewObject.ShapeColor = NICKEL_STRIP_COLOR
+        nickel_strip.Length = length
+        nickel_strip.Width = NICKEL_STRIP_WIDTH
+        nickel_strip.Height = NICKEL_STRIP_HEIGHT
+        nickel_strip.Placement = placement
+        nickel_strip.Placement.move(App.Vector(-(length-radius), 0, 0))
+        nickel_strip.Placement.move(App.Vector(0, -radius/2, 0))
+        return nickel_strip
+
+    # s : space between each cell
+    def create3dCell(self, radius, height, index, s):
         doc = App.ActiveDocument
         label = "Cell-w-"+str(index)
-        doc.addObject("Part::Cylinder","Cylinder")
-        doc.ActiveObject.Label = label
+        cell_object = doc.addObject("Part::Cylinder","Cylinder")
+        cell_object.Label = label
         
         print(label)
-        doc.ActiveObject.Radius = str(radius)+' mm'
-        doc.ActiveObject.Height = str(height)+' mm'
-        ''''
-        doc.ActiveObject.getObject(label).ShapeColor = self.cell.getShapeColor()
-
-        doc.ActiveObject.getObject(label).ShapeColor = self.cell.getShapeColor()
+        cell_object.Radius = str(radius)+' mm'
+        cell_object.Height = str(height)+' mm'
         
-        if widthOrHeight:
-            self.doc.getObject(label).Placement = App.Placement(App.Vector((index*radius)+self.space_between_cells,0,0),App.Rotation(App.Vector(0,0,1),0))
+        if s < 0.0:
+            print("The space between each cell should not be negative !")
 
-        else:
-            self.doc.getObject(label).Placement = App.Placement(App.Vector(0,(index*radius)+self.space_between_cells,0),App.Rotation(App.Vector(0,0,1),0))
-
-        '''
+        placement = App.Placement(App.Vector(float(index*radius*2)+s,0,0),App.Rotation(App.Vector(0,0,1),0))
+        cell_object.Placement = placement
+        
+        cell_object.ViewObject.LineColor = cell_object.ViewObject.PointColor = self.cell.getLineColor()
+        cell_object.ViewObject.ShapeColor = self.cell.getShapeColor()
+        print(self.cell.getShapeColor())
+        
+        return placement
     def makeStrList(self):
         li = [
             self.brand,

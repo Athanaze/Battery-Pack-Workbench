@@ -1,0 +1,1 @@
+rm colors && python list_all_possible_colors.py | sort | uniq > colors
