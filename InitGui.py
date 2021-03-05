@@ -14,12 +14,10 @@ class BatteryPackWorkbench (Workbench):
     
     # executed when the workbench is activated
     def Activated(self):
-        print("WORKBENCH ACTIVATED")
         return
 
     # executed when the workbench is deactivated
     def Deactivated(self):
-        print("WORKBENCH DE-ACTIVATED")
         return
 
     def ContextMenu(self, recipient):

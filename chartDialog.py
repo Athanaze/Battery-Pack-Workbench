@@ -1,6 +1,6 @@
 from PySide import QtGui, QtCore
 import sys, random
-
+import matplotlib.pyplot as plt
 
 class ShowChart(QtGui.QDialog):
 
@@ -11,55 +11,17 @@ class ShowChart(QtGui.QDialog):
         self.initUI()
         
     def initUI(self):
-        mainLayout = QtGui.QVBoxLayout()
-        
-        scene = QtGui.QGraphicsScene()
+        # Pie chart, where the slices will be ordered and plotted counter-clockwise:
+        labels = 'Frogs', 'Hogs', 'Dogs', 'Logs'
+        sizes = [15, 30, 45, 10]
+        explode = (0, 0.1, 0, 0)  # only "explode" the 2nd slice (i.e. 'Hogs')
 
-        families = [1,2,3,4,5,6,7,8,9,10]
-        total = 0
-        set_angle = 0
-        count1 = 0
-        colours = []
-        total = sum(families)
+        fig1, ax1 = plt.subplots()
+        ax1.pie(sizes, explode=explode, labels=labels, autopct='%1.1f%%',
+                shadow=True, startangle=90)
+        ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
 
-        for count in range(len(families)):
-            number = []
-            for count in range(3):
-                number.append(random.randrange(0, 255))
-            colours.append(QtGui.QColor(number[0],number[1],number[2]))
-
-        for family in families:
-            # Max span is 5760, so we have to calculate corresponding span angle
-            angle = round(float(family*5760)/total)
-            ellipse = QtGui.QGraphicsEllipseItem(0,0,400,400)
-            ellipse.setPos(0,0)
-            ellipse.setStartAngle(set_angle)
-            ellipse.setSpanAngle(angle)
-            ellipse.setBrush(colours[count1])
-            set_angle += angle
-            count1 += 1
-            scene.addItem(ellipse)
-
-        view = QtGui.QGraphicsView(scene)
-        view.show()
-        '''
-        view = QtWebEngine.QWebView(mainLayout)
-        view.load(QtWebEngine.QUrl("https://www.chartjs.org/docs/latest/charts/doughnut.html"))
-        view.show()
-
-        mainLayout.addWidget(view)
-        '''
-
-        option1Button = QtGui.QPushButton("Exit")
-        option1Button.clicked.connect(self.exitButtonClicked)
-        
-        mainLayout.addWidget(self.addToDbCheckBox)
-
-        self.setLayout(mainLayout)
-        # define window		xLoc,yLoc,xDim,yDim
-        self.setGeometry(250, 250, 0, 50)
-        self.setWindowTitle("Chart")
-        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+        plt.show()
 
     def exitButtonClicked(self):
         self.close()

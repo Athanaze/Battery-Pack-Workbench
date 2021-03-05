@@ -111,7 +111,6 @@ class Cell:
             print(model_number)
             print("ERROR : could not find the matching model number in identification_ref.csv")
 
-        print("ouais")
         # PRICE PERFORMANCE
         found = False    
         with open(freecad_dir+"Mod/battery_pack/price_performance.csv", newline='') as csvfile:
@@ -126,7 +125,11 @@ class Cell:
         if not found:
             print(model_number)
             print("ERROR : could not find the matching model number in price_performance.csv")
-
+            print("Using the same values as for the Samsung INR18650-35E")
+            #default_values = ["Samsung","INR18650-35E",3450,8,10,12.42,"€3.25",3.82,€2.54,600,4.89,50.0,"4.03 Kg",81]
+            self.price = 3.25
+            self.weight = 50.0 # It's in the default_values array but I was too lazy to find the index
+            self.perf_notes = "default values"
 
     def getShapeColor(self):
         try:

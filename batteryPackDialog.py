@@ -68,6 +68,9 @@ class BatteryPackDialog(QtGui.QDialog):
 
         App.ActiveDocument.recompute()
         prop = 'App::Property'
+
+        
+
         #App.activeDocument().Tip
         self.part = App.activeDocument().addObject('App::Part',BATTERY_PACK_DEFAULT_PART_LABEL)
         self.part.addProperty(prop+'Length', 'Width', 'Dimensions', 'Battery pack width').Width = '10 mm'
@@ -79,12 +82,39 @@ class BatteryPackDialog(QtGui.QDialog):
             'Cells arrangement',
             'Space between cells'
         ).space_between_cells = self.space_between_cells
-        
+
         # Default value, will change when we set the number of cells, the space between the cells, etc...
         self.part.addProperty(prop+'Length', 'total_nickel_strip_length', "Connections", "Total nickel strip length").total_nickel_strip_length = 32.0
+        
+        self.part.addProperty(prop+'Integer', 'nc', 'Cell', 'Number of cells in the pack').nc = 0
+        self.part.setExpression("nc", "5")
+
+        ### Cell ###
         self.part.addProperty(prop+'String', 'cell', 'Cell', 'Model of Cell used').cell = self.model.text()
+        self.part.addProperty(prop+'Float', 'cell_price', 'Cell', 'Individual cell price').cell_price = self.cell.price
+        self.part.addProperty(prop+'Float', 'cell_weight', 'Cell', 'Individual cell weight').cell_weight = self.cell.weight
+
+        ### Nickel Strip ###
+        self.part.addProperty(prop+'Float', 'nickel_strip_width', 'Nickel strip', 'Nickel strip width').nickel_strip_width = NICKEL_STRIP_WIDTH
+        self.part.addProperty(prop+'Float', 'nickel_strip_height', 'Nickel strip', 'Nickel strip height').nickel_strip_height = NICKEL_STRIP_HEIGHT
+        self.part.addProperty(prop+'Float', 'nickel_strip_weight_per_mm3', 'Nickel strip', 'Nickel strip weight per mm3').nickel_strip_weight_per_mm3 = NICKEL_STRIP_WEIGHT_PER_MM3
+
+        ### Weight ###
+
+        self.part.addProperty(prop+'Float', 'battery_holder_weight', 'Weight', 'Individual battery holder weight').battery_holder_weight = BATTERY_HOLDER_WEIGHT
+
+        self.part.addProperty(prop+'Float', 'total_cells_weight', 'Weight', 'Total cells weight').total_cells_weight = 0.0
+        self.part.setExpression("total_cells_weight", "cell_weight*nc")
+        self.part.addProperty(prop+'Float', 'total_nickel_strip_weight', 'Weight', 'Total weight of nickel strip').total_nickel_strip_weight = 0.0
+        self.part.addProperty(prop+'Float', 'total_battery_holders_weight', 'Weight', 'Total battery holders weight').total_battery_holders_weight = 0.0
+        self.part.addProperty(prop+'Float', 'total_weight', 'Weight', 'Total weight of the battery pack').total_weight = 0.0
         
-        
+        ### Price ###
+
+        self.part.addProperty(prop+'Float', 'total_cells_price', 'Price', 'Total cells price').total_cells_price = 0.0
+        self.part.addProperty(prop+'Float', 'nickel_strip_price_per_mm', 'Price', 'Nickel strip price per mm').nickel_strip_price_per_mm = NICKEL_STRIP_PRICE_PER_MM
+        self.part.addProperty(prop+'Float', 'total_nickel_strip_price', 'Price', 'Total nickel strip price').total_nickel_strip_price = 0.0
+
         Gui.activateView('Gui::View3DInventor', True)
         Gui.activeView().setActiveObject('part', self.part)
         App.ActiveDocument.recompute()
@@ -102,19 +132,18 @@ class BatteryPackDialog(QtGui.QDialog):
         # Creates the nickel stripS connecting all the cells in series
         length = ( (n_cells_in_width*((radius*2)) ) + n_cells_in_width*(space) ) - space
 
-        self.part.total_nickel_strip_length = 2*length # top and bottom strips
+        self.part.total_nickel_strip_length = 2.0*length # top and bottom strips
         self.create_nickel_strips(length, radius, height, placement_of_last_cell)
-        '''
-        nc = n_cells_in_width*n_cells_in_height
-        self.part.total_cells_weight = self.cell.weight*nc
-        self.part.total_battery_holders_weight = BATTERY_HOLDER_WEIGHT*nc*2 # One holder on top, one on the bottom
-        self.part.total_cells_price = self.cell.price*nc
-        
+       
         # Volume * weight per mm³
-        self.part.total_nickel_strip_weight = self.part.total_nickel_strip_length*NICKEL_STRIP_WIDTH*NICKEL_STRIP_HEIGHT*NICKEL_STRIP_WEIGHT_PER_MM3
-
-        self.part.total_weight = self.part.total_nickel_strip_weight + self.part.total_battery_holders_weight + self.part.total_cells_weight
-        '''
+        self.part.setExpression("total_nickel_strip_weight", "total_nickel_strip_length*nickel_strip_width*nickel_strip_height*nickel_strip_weight_per_mm3")
+        self.part.setExpression("total_battery_holders_weight", "battery_holder_weight*nc*2")# One holder on top, one on the bottom
+        self.part.setExpression("total_weight", "total_nickel_strip_weight+total_battery_holders_weight+total_cells_weight")
+        
+        ### Price ###
+        self.part.setExpression("total_cells_price", "cell_price*nc")
+        self.part.setExpression("total_nickel_strip_price", "nickel_strip_price_per_mm*total_nickel_strip_length")
+        
         Gui.SendMsgToActiveView("ViewFit")
         App.ActiveDocument.recompute()
 
@@ -161,9 +190,9 @@ class BatteryPackDialog(QtGui.QDialog):
         
         cell_object.ViewObject.LineColor = cell_object.ViewObject.PointColor = self.cell.getLineColor()
         cell_object.ViewObject.ShapeColor = self.cell.getShapeColor()
-        print(self.cell.getShapeColor())
         
         return placement
+    
     def makeStrList(self):
         li = [
             self.brand,
