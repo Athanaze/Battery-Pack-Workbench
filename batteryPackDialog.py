@@ -60,7 +60,6 @@ class BatteryPackDialog(QtGui.QDialog):
 
         self.cell = Cell(self.model.text(), self.freecad_dir)
         # For now, n cells in series = width, n cells in para = length
-        n_cells_in_width = s
         n_cells_in_height = p
 
         # /!\ space_between_cells must be a STRING formatted like so : '1 mm'
@@ -69,13 +68,10 @@ class BatteryPackDialog(QtGui.QDialog):
         App.ActiveDocument.recompute()
         prop = 'App::Property'
 
-        
-
-        #App.activeDocument().Tip
         self.part = App.activeDocument().addObject('App::Part',BATTERY_PACK_DEFAULT_PART_LABEL)
         self.part.addProperty(prop+'Length', 'Width', 'Dimensions', 'Battery pack width').Width = '10 mm'
-        self.part.addProperty(prop+'Integer', 'S', 'Cells arrangement', 'Cells in series').S = s
-        self.part.addProperty(prop+'Integer', 'P', 'Cells arrangement', 'Cells in parallel').P = p
+        self.part.addProperty(prop+'Integer', 'serie', 'Cells arrangement', 'Cells in series').serie = s
+        self.part.addProperty(prop+'Integer', 'para', 'Cells arrangement', 'Cells in parallel').para = p
         self.part.addProperty(
             prop+'Length',
             'space_between_cells',
@@ -87,12 +83,14 @@ class BatteryPackDialog(QtGui.QDialog):
         self.part.addProperty(prop+'Length', 'total_nickel_strip_length', "Connections", "Total nickel strip length").total_nickel_strip_length = 32.0
         
         self.part.addProperty(prop+'Integer', 'nc', 'Cell', 'Number of cells in the pack').nc = 0
-        self.part.setExpression("nc", "5")
+        self.part.setExpression("nc", "serie*para")
 
         ### Cell ###
         self.part.addProperty(prop+'String', 'cell', 'Cell', 'Model of Cell used').cell = self.model.text()
         self.part.addProperty(prop+'Float', 'cell_price', 'Cell', 'Individual cell price').cell_price = self.cell.price
         self.part.addProperty(prop+'Float', 'cell_weight', 'Cell', 'Individual cell weight').cell_weight = self.cell.weight
+        self.part.addProperty(prop+'Float', 'cell_radius', 'Cell', 'Individual cell radius').cell_radius = self.cell.radius
+        self.part.addProperty(prop+'Float', 'cell_height', 'Cell', 'Individual cell height').cell_height = self.cell.height
 
         ### Nickel Strip ###
         self.part.addProperty(prop+'Float', 'nickel_strip_width', 'Nickel strip', 'Nickel strip width').nickel_strip_width = NICKEL_STRIP_WIDTH
@@ -119,21 +117,18 @@ class BatteryPackDialog(QtGui.QDialog):
         Gui.activeView().setActiveObject('part', self.part)
         App.ActiveDocument.recompute()
 
-        # Dimensions in mm
-        # For now, harcoded for 18650 cells
-        radius = 9
-        height = 65
         space = float(self.space_between_cells.split(" ")[0])
 
-        for w in range(n_cells_in_width):
-            placement_of_last_cell = self.create3dCell(radius, height, w, space)
+        for w in range(self.part.serie):
+            placement_of_last_cell = self.create3dCell(w, space)
             App.ActiveDocument.recompute()
         
-        # Creates the nickel stripS connecting all the cells in series
-        length = ( (n_cells_in_width*((radius*2)) ) + n_cells_in_width*(space) ) - space
+        # Creates the nickel strips connecting all the cells in series
+        
+        # we multiply by 2 for the top and bottom strips
+        self.part.setExpression("total_nickel_strip_length", "2*(  ( (serie*((cell_radius*2)) ) + serie*(space_between_cells) ) - space_between_cells )")
 
-        self.part.total_nickel_strip_length = 2.0*length # top and bottom strips
-        self.create_nickel_strips(length, radius, height, placement_of_last_cell)
+        self.create_nickel_strips(placement_of_last_cell)
        
         # Volume * weight per mm³
         self.part.setExpression("total_nickel_strip_weight", "total_nickel_strip_length*nickel_strip_width*nickel_strip_height*nickel_strip_weight_per_mm3")
@@ -142,48 +137,49 @@ class BatteryPackDialog(QtGui.QDialog):
         
         ### Price ###
         self.part.setExpression("total_cells_price", "cell_price*nc")
-        self.part.setExpression("total_nickel_strip_price", "nickel_strip_price_per_mm*total_nickel_strip_length")
+        print("L.140 !")
+        self.part.setExpression("total_nickel_strip_price", "nickel_strip_price_per_mm*(total_nickel_strip_length / mm)")
         
         Gui.SendMsgToActiveView("ViewFit")
         App.ActiveDocument.recompute()
 
         self.close()
 
-    def create_nickel_strips(self, length, radius, height, placement_of_last_cell):
+    def create_nickel_strips(self, placement_of_last_cell):
 
-        top_strip = self.setup_nickel_strip("Nickel_Strip_top", length, radius, placement_of_last_cell)
+        top_strip = self.setup_nickel_strip("Nickel_Strip_top", placement_of_last_cell)
         top_strip.Placement.move(App.Vector(0, 0, -NICKEL_STRIP_HEIGHT))
 
-        bottom_strip = self.setup_nickel_strip("Nickel_Strip_bottom", length, radius, placement_of_last_cell)
-        bottom_strip.Placement.move(App.Vector(0, 0, height+NICKEL_STRIP_HEIGHT))
+        bottom_strip = self.setup_nickel_strip("Nickel_Strip_bottom", placement_of_last_cell)
+        bottom_strip.Placement.move(App.Vector(0, 0, self.cell.height+NICKEL_STRIP_HEIGHT))
     
-    def setup_nickel_strip(self, name, length, radius, placement):
+    def setup_nickel_strip(self, name, placement):
         nickel_strip = App.ActiveDocument.addObject("Part::Box",name)
         nickel_strip.ViewObject.LineColor = nickel_strip.ViewObject.PointColor = NICKEL_STRIP_LINE_POINT_COLOR
         nickel_strip.ViewObject.ShapeColor = NICKEL_STRIP_COLOR
-        nickel_strip.Length = length
+        nickel_strip.Length = self.part.total_nickel_strip_length.Value / 2.0
         nickel_strip.Width = NICKEL_STRIP_WIDTH
         nickel_strip.Height = NICKEL_STRIP_HEIGHT
         nickel_strip.Placement = placement
-        nickel_strip.Placement.move(App.Vector(-(length-radius), 0, 0))
-        nickel_strip.Placement.move(App.Vector(0, -radius/2, 0))
+        nickel_strip.Placement.move(App.Vector(-(nickel_strip.Length.Value-self.cell.radius), 0, 0))
+        nickel_strip.Placement.move(App.Vector(0, -self.cell.radius/2, 0))
         return nickel_strip
 
     # s : space between each cell
-    def create3dCell(self, radius, height, index, s):
+    def create3dCell(self, index, s):
         doc = App.ActiveDocument
         label = "Cell-w-"+str(index)
         cell_object = doc.addObject("Part::Cylinder","Cylinder")
         cell_object.Label = label
         
-        cell_object.Radius = str(radius)+' mm'
-        cell_object.Height = str(height)+' mm'
+        cell_object.Radius = str(self.cell.radius)+' mm'
+        cell_object.Height = str(self.cell.height)+' mm'
         
         if s < 0.0:
             print("The space between each cell should not be negative !")
 
         placement = App.Placement(
-            App.Vector(float( index*((radius*2)+s) ),0,0),
+            App.Vector(float( index*((self.cell.radius*2)+s) ),0,0),
             App.Rotation(App.Vector(0,0,1),0)
         )
         cell_object.Placement = placement

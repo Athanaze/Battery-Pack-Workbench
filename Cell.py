@@ -66,7 +66,31 @@ COLORS = {
         "Maroon":(0.1020,0.0745,0.0471),
 }
 
+CURRENCY_SYMBOLS = [
+    "$",
+    "€",
+    "£",
+    "¥",
+    "₿"
+]
+
 class Cell:
+
+    def setup_price_attributes(self, s):
+    
+        found = False
+        for sym in CURRENCY_SYMBOLS:
+            if sym in s:
+                found = True
+                s = s.replace(sym, "")
+                self.currency = sym
+        
+        if not found:
+            print("NO CURRENCY SYMBOL FOUND")
+        
+        s = s.replace(" ", "")
+        self.price = float(s)
+    
     # Construction by the Model number.
     # Mainly assigns the values from the .csv and put some default values when needed
     def __init__(self, model_number, freecad_dir):
@@ -118,8 +142,8 @@ class Cell:
             for row in reader:
                 if row['Model'] == model_number:
                     found = True                    
-                    self.price = row['Price (Euro - nkon.nl)']
-                    self.weight = row['max. Weight in g (Datasheet)']
+                    self.setup_price_attributes(row['Price (Euro - nkon.nl)'])
+                    self.weight = float(row['max. Weight in g (Datasheet)'])
                     self.perf_notes = row['Notes']
 
         if not found:
@@ -130,6 +154,11 @@ class Cell:
             self.price = 3.25
             self.weight = 50.0 # It's in the default_values array but I was too lazy to find the index
             self.perf_notes = "default values"
+        
+        # Dimensions in mm
+        # For now, harcoded for 18650 cells
+        self.radius = 9
+        self.height = 65
 
     def getShapeColor(self):
         try:
@@ -139,3 +168,5 @@ class Cell:
             
     def getLineColor(self):
         return COLORS[preferences.DEFAULT_CELL_LINE_COLOR]
+
+   
