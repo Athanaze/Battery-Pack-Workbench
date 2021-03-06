@@ -1,15 +1,20 @@
-import batteryPackUtils as bp
-class BatteryPackWorkbench (Workbench):
+class Utils:
+    def getIcon(self, icon_name):
+            import preferences
+            return FreeCAD.getUserAppDataDir()+"Mod/"+preferences.MOD_FOLDER_NAME+"/"+icon_name+".svg"
+
+class BatteryPackWorkbench (Workbench, Utils):
     
     MenuText = "Battery Pack Workbench"
     ToolTip = "A description of Battery Pack Workbench"
-    Icon =FreeCAD.getUserAppDataDir()+"Mod/battery_pack/logo.svg"
+    import preferences
+    Icon = FreeCAD.getUserAppDataDir()+"Mod/"+preferences.MOD_FOLDER_NAME+"/logo.svg"
 
     # executed when FreeCAD starts
     def Initialize(self):
-        #import MyModuleA, MyModuleB # import here all the needed files that create your FreeCAD commands
+        import preferences
         self.list = ["Battery Pack command", "New Cell command", "Chart command"] # A list of command names created in the line above
-        self.appendToolbar("My Commands",self.list) # creates a new toolbar with your commands
+        self.appendToolbar(preferences.MENU_TITLE,self.list) # creates a new toolbar with your commands
         self.appendMenu("Batter Pack",self.list) # creates a new menu
     
     # executed when the workbench is activated
@@ -23,7 +28,7 @@ class BatteryPackWorkbench (Workbench):
     def ContextMenu(self, recipient):
         """This is executed whenever the user right-clicks on screen"""
         # "recipient" will be either "view" or "tree"
-        self.appendContextMenu("My commands",self.list) # add commands to the context menu
+        self.appendContextMenu(preferences.MENU_TITLE,self.list) # add commands to the context menu, "battery"
 
     def GetClassName(self): 
         # This function is mandatory if this is a full python workbench
@@ -44,11 +49,8 @@ battery_packs = []
 '''
 
 # New battery pack
-class Command_Class():
+class Command_Class(Utils):
     
-    def getIcon(self, icon_name):
-        return FreeCAD.getUserAppDataDir()+"Mod/battery_pack/"+icon_name+".svg"
-
     def GetResources(self):
         return {'Pixmap'  : self.getIcon("new_pack"), # the name of a svg file available in the resources
                 'Accel' : "Shift+N", # a default shortcut (optional)
@@ -65,18 +67,14 @@ class Command_Class():
         form.exec_()
 
         return
-    
-    # Active only if there is an active document
+   
     def IsActive(self):
-        return True#return FreeCAD.activeDocument()
+        return True
 
-class NewCellCommandClass():
-    def getIcon(self, icon_name):
-        return 
+class NewCellCommandClass(Utils):
 
     def GetResources(self):
-        return {'Pixmap'  : FreeCAD.getUserAppDataDir()+"Mod/battery_pack/new_cell.svg",
-                
+        return {'Pixmap'  : self.getIcon("new_cell"),
                 'MenuText': "New Cell",
                 'ToolTip' : "New Cell"}
 
@@ -92,17 +90,13 @@ class NewCellCommandClass():
 
         return
 
-    # Active only if there is an active document
     def IsActive(self):
-        return True#FreeCAD.activeDocument()
+        return True
 
-class ChartCommandClass():
-    def getIcon(self, icon_name):
-        return 
+class ChartCommandClass(Utils):
 
     def GetResources(self):
-        return {'Pixmap'  : FreeCAD.getUserAppDataDir()+"Mod/battery_pack/chart.svg",
-                
+        return {'Pixmap'  : self.getIcon("chart"),
                 'MenuText': "Chart",
                 'ToolTip' : "Chart"}
 
@@ -111,13 +105,11 @@ class ChartCommandClass():
         from PySide import QtGui
         import chartDialog
 
-        form = chartDialog.ShowChart(FreeCAD.getUserAppDataDir())
+        form = chartDialog.ShowChart(FreeCAD.getUserAppDataDir(), FreeCADGui.Selection.getSelection())
         form.exec_()
-        print(form.retStatus)
 
         return
 
-    # Active only if there is an active document
     def IsActive(self):
         return True
 

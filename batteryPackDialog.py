@@ -2,12 +2,11 @@ from PySide import QtGui, QtCore
 from completerCreator import get_completer
 import FreeCAD as App
 import FreeCADGui as Gui
-import batteryPackUtils as bpUtils
 import Part
 from Cell import Cell
 from preferences import *
 
-BATTERY_PACK_DEFAULT_PART_LABEL = "Battery pack"
+
 
 class BatteryPackDialog(QtGui.QDialog):
 
@@ -20,7 +19,12 @@ class BatteryPackDialog(QtGui.QDialog):
     def initUI(self):
         mainLayout = QtGui.QVBoxLayout()
 
-        self.model = self.textFieldHelper("Model (Markings)"," | Note : if you don't find the model in the autocomplete, you have to create a new cell first", mainLayout)
+        self.model = self.textFieldHelper(
+                                    "Model (Markings)",
+                                    " | Note : if you don't find the model in the autocomplete, you have to create a new cell first",
+                                    mainLayout
+                                    )
+
         mainLayout.addWidget(self.model)
 
         mainLayout.addWidget(QtGui.QLabel("Number of cells in series"))
@@ -62,84 +66,135 @@ class BatteryPackDialog(QtGui.QDialog):
         # For now, n cells in series = width, n cells in para = length
         n_cells_in_height = p
 
-        # /!\ space_between_cells must be a STRING formatted like so : '1 mm'
-        self.space_between_cells = str(self.qSpinBox_space_cells.value()) + " mm"
+        self.space_between_cells = float(self.qSpinBox_space_cells.value())
 
-        App.ActiveDocument.recompute()
+        # Shorthands
+        
         prop = 'App::Property'
+        
+        fl = prop+'Float'
+        pi = prop+'Integer'
+        pl = prop+'Length'
 
         self.part = App.activeDocument().addObject('App::Part',BATTERY_PACK_DEFAULT_PART_LABEL)
-        self.part.addProperty(prop+'Length', 'Width', 'Dimensions', 'Battery pack width').Width = '10 mm'
-        self.part.addProperty(prop+'Integer', 'serie', 'Cells arrangement', 'Cells in series').serie = s
-        self.part.addProperty(prop+'Integer', 'para', 'Cells arrangement', 'Cells in parallel').para = p
+        self.part.addProperty(pl, 'Width', 'Dimensions', 'Battery pack width').Width = '10 mm'
+        self.part.addProperty(pi, 'serie', 'Cells arrangement', 'Cells in series').serie = s
+        self.part.addProperty(pi, 'para', 'Cells arrangement', 'Cells in parallel').para = p
         self.part.addProperty(
-            prop+'Length',
+            fl,
             'space_between_cells',
             'Cells arrangement',
             'Space between cells'
         ).space_between_cells = self.space_between_cells
 
         # Default value, will change when we set the number of cells, the space between the cells, etc...
-        self.part.addProperty(prop+'Length', 'total_nickel_strip_length', "Connections", "Total nickel strip length").total_nickel_strip_length = 32.0
+        self.part.addProperty(fl,
+                            'total_nickel_strip_length',
+                            "Connections",
+                            "Total nickel strip length").total_nickel_strip_length = 32.0
         
-        self.part.addProperty(prop+'Integer', 'nc', 'Cell', 'Number of cells in the pack').nc = 0
+        self.part.addProperty(pi, 'nc', 'Cell', 'Number of cells in the pack').nc = 0
         self.part.setExpression("nc", "serie*para")
 
         ### Cell ###
         self.part.addProperty(prop+'String', 'cell', 'Cell', 'Model of Cell used').cell = self.model.text()
-        self.part.addProperty(prop+'Float', 'cell_price', 'Cell', 'Individual cell price').cell_price = self.cell.price
-        self.part.addProperty(prop+'Float', 'cell_weight', 'Cell', 'Individual cell weight').cell_weight = self.cell.weight
-        self.part.addProperty(prop+'Float', 'cell_radius', 'Cell', 'Individual cell radius').cell_radius = self.cell.radius
-        self.part.addProperty(prop+'Float', 'cell_height', 'Cell', 'Individual cell height').cell_height = self.cell.height
+        self.part.addProperty(fl, 'cell_price', 'Cell', 'Individual cell price').cell_price = self.cell.price
+        self.part.addProperty(fl, 'cell_weight', 'Cell', 'Individual cell weight').cell_weight = self.cell.weight
+        self.part.addProperty(fl, 'cell_radius', 'Cell', 'Individual cell radius').cell_radius = self.cell.radius
+        self.part.addProperty(fl, 'cell_height', 'Cell', 'Individual cell height').cell_height = self.cell.height
 
         ### Nickel Strip ###
-        self.part.addProperty(prop+'Float', 'nickel_strip_width', 'Nickel strip', 'Nickel strip width').nickel_strip_width = NICKEL_STRIP_WIDTH
-        self.part.addProperty(prop+'Float', 'nickel_strip_height', 'Nickel strip', 'Nickel strip height').nickel_strip_height = NICKEL_STRIP_HEIGHT
-        self.part.addProperty(prop+'Float', 'nickel_strip_weight_per_mm3', 'Nickel strip', 'Nickel strip weight per mm3').nickel_strip_weight_per_mm3 = NICKEL_STRIP_WEIGHT_PER_MM3
+        self.part.addProperty(fl,
+                            'nickel_strip_width',
+                            'Nickel strip',
+                            'Nickel strip width').nickel_strip_width = NICKEL_STRIP_WIDTH
+
+        self.part.addProperty(fl,
+                            'nickel_strip_height',
+                            'Nickel strip',
+                            'Nickel strip height'
+                            ).nickel_strip_height = NICKEL_STRIP_HEIGHT
+
+        self.part.addProperty(fl,
+                            'nickel_strip_weight_per_mm3',
+                            'Nickel strip',
+                            'Nickel strip weight per mm3'
+                            ).nickel_strip_weight_per_mm3 = NICKEL_STRIP_WEIGHT_PER_MM3
 
         ### Weight ###
 
-        self.part.addProperty(prop+'Float', 'battery_holder_weight', 'Weight', 'Individual battery holder weight').battery_holder_weight = BATTERY_HOLDER_WEIGHT
+        self.part.addProperty(fl,
+                            'battery_holder_weight',
+                            'Weight',
+                            'Individual battery holder weight').battery_holder_weight = BATTERY_HOLDER_WEIGHT
 
-        self.part.addProperty(prop+'Float', 'total_cells_weight', 'Weight', 'Total cells weight').total_cells_weight = 0.0
+        self.part.addProperty(fl, 'total_cells_weight', 'Weight', 'Total cells weight').total_cells_weight = 0.0
         self.part.setExpression("total_cells_weight", "cell_weight*nc")
-        self.part.addProperty(prop+'Float', 'total_nickel_strip_weight', 'Weight', 'Total weight of nickel strip').total_nickel_strip_weight = 0.0
-        self.part.addProperty(prop+'Float', 'total_battery_holders_weight', 'Weight', 'Total battery holders weight').total_battery_holders_weight = 0.0
-        self.part.addProperty(prop+'Float', 'total_weight', 'Weight', 'Total weight of the battery pack').total_weight = 0.0
+
+        self.part.addProperty(fl,
+                            'total_nickel_strip_weight',
+                            'Weight',
+                            'Total weight of nickel strip').total_nickel_strip_weight = 0.0
+
+        self.part.addProperty(fl,
+                            'total_battery_holders_weight',
+                            'Weight',
+                            'Total battery holders weight').total_battery_holders_weight = 0.0
+
+        self.part.addProperty(fl,
+                            'total_weight',
+                            'Weight',
+                            'Total weight of the battery pack').total_weight = 0.0
         
         ### Price ###
 
-        self.part.addProperty(prop+'Float', 'total_cells_price', 'Price', 'Total cells price').total_cells_price = 0.0
-        self.part.addProperty(prop+'Float', 'nickel_strip_price_per_mm', 'Price', 'Nickel strip price per mm').nickel_strip_price_per_mm = NICKEL_STRIP_PRICE_PER_MM
-        self.part.addProperty(prop+'Float', 'total_nickel_strip_price', 'Price', 'Total nickel strip price').total_nickel_strip_price = 0.0
+        self.part.addProperty(fl, 'total_cells_price', 'Price', 'Total cells price').total_cells_price = 0.0
+        
+        self.part.addProperty(fl,
+                            'nickel_strip_price_per_mm',
+                            'Price', 'Nickel strip price per mm'
+                            ).nickel_strip_price_per_mm = NICKEL_STRIP_PRICE_PER_MM
+        
+        self.part.addProperty(fl,
+                            'total_nickel_strip_price',
+                            'Price',
+                            'Total nickel strip price'
+                            ).total_nickel_strip_price = 0.0
 
         Gui.activateView('Gui::View3DInventor', True)
         Gui.activeView().setActiveObject('part', self.part)
         App.ActiveDocument.recompute()
 
-        space = float(self.space_between_cells.split(" ")[0])
-
         for w in range(self.part.serie):
-            placement_of_last_cell = self.create3dCell(w, space)
+            placement_of_last_cell = self.create3dCell(w, self.part.space_between_cells)
             App.ActiveDocument.recompute()
         
         # Creates the nickel strips connecting all the cells in series
         
         # we multiply by 2 for the top and bottom strips
-        self.part.setExpression("total_nickel_strip_length", "2*(  ( (serie*((cell_radius*2)) ) + serie*(space_between_cells) ) - space_between_cells )")
+        self.part.setExpression(
+            "total_nickel_strip_length",
+            "2*(  ( (serie*((cell_radius*2)) ) + serie*(space_between_cells) ) - space_between_cells )"
+            )
 
         self.create_nickel_strips(placement_of_last_cell)
        
         # Volume * weight per mm³
-        self.part.setExpression("total_nickel_strip_weight", "total_nickel_strip_length*nickel_strip_width*nickel_strip_height*nickel_strip_weight_per_mm3")
-        self.part.setExpression("total_battery_holders_weight", "battery_holder_weight*nc*2")# One holder on top, one on the bottom
-        self.part.setExpression("total_weight", "total_nickel_strip_weight+total_battery_holders_weight+total_cells_weight")
+        self.part.setExpression("total_nickel_strip_weight",
+                                "total_nickel_strip_length*nickel_strip_width*nickel_strip_height*nickel_strip_weight_per_mm3"
+        )
+        self.part.setExpression(
+            "total_battery_holders_weight",
+            "battery_holder_weight*nc*2"
+        )# One holder on top, one on the bottom
+        self.part.setExpression(
+            "total_weight",
+            "total_nickel_strip_weight+total_battery_holders_weight+total_cells_weight"
+        )
         
         ### Price ###
         self.part.setExpression("total_cells_price", "cell_price*nc")
-        print("L.140 !")
-        self.part.setExpression("total_nickel_strip_price", "nickel_strip_price_per_mm*(total_nickel_strip_length / mm)")
-        
+        self.part.setExpression("total_nickel_strip_price", "nickel_strip_price_per_mm*total_nickel_strip_length")
         Gui.SendMsgToActiveView("ViewFit")
         App.ActiveDocument.recompute()
 
@@ -157,7 +212,7 @@ class BatteryPackDialog(QtGui.QDialog):
         nickel_strip = App.ActiveDocument.addObject("Part::Box",name)
         nickel_strip.ViewObject.LineColor = nickel_strip.ViewObject.PointColor = NICKEL_STRIP_LINE_POINT_COLOR
         nickel_strip.ViewObject.ShapeColor = NICKEL_STRIP_COLOR
-        nickel_strip.Length = self.part.total_nickel_strip_length.Value / 2.0
+        nickel_strip.Length = self.part.total_nickel_strip_length / 2.0
         nickel_strip.Width = NICKEL_STRIP_WIDTH
         nickel_strip.Height = NICKEL_STRIP_HEIGHT
         nickel_strip.Placement = placement

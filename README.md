@@ -73,3 +73,8 @@ Note: I have not checked every values in this spreadsheets, so I recommend alway
 ### Pyside docs
 
 <https://srinikom.github.io/pyside-docs/PySide/QtGui/QLabel.html#PySide.QtGui.QLabel>
+
+
+### Matplotlib colors
+
+<https://matplotlib.org/stable/gallery/color/named_colors.html>

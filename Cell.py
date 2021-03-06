@@ -150,15 +150,12 @@ class Cell:
             print(model_number)
             print("ERROR : could not find the matching model number in price_performance.csv")
             print("Using the same values as for the Samsung INR18650-35E")
-            #default_values = ["Samsung","INR18650-35E",3450,8,10,12.42,"€3.25",3.82,€2.54,600,4.89,50.0,"4.03 Kg",81]
             self.price = 3.25
-            self.weight = 50.0 # It's in the default_values array but I was too lazy to find the index
+            self.weight = 50.0
             self.perf_notes = "default values"
         
-        # Dimensions in mm
-        # For now, harcoded for 18650 cells
-        self.radius = 9
-        self.height = 65
+        self.radius = preferences.DEFAULT_CELL_RADIUS
+        self.height = preferences.DEFAULT_CELL_HEIGHT
 
     def getShapeColor(self):
         try:
