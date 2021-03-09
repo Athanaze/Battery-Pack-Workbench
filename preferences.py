@@ -19,7 +19,6 @@ NICKEL_STRIP_HEIGHT = 0.15
 # Unit : g
 NICKEL_STRIP_WEIGHT_PER_MM3 = 0.00857
 
-
 # Note : For now, these are made up, to see if the system works
 # Unit : g
 BATTERY_HOLDER_WEIGHT = 0.5
@@ -36,6 +35,9 @@ NICKEL_STRIP_PRICE_PER_MM = 0.0035
 MOD_FOLDER_NAME = "battery_pack"
 MENU_TITLE = "Battery Pack"
 
+MODELS_PATH = "models/"
+HOLDER_PATH = MODELS_PATH + "holder.step"
+
 ### PLOT ###
 
 # Must be a pretty low angle so the small percentages
@@ -48,20 +50,22 @@ PIE_PERCENT_DIST = PIE_RADIUS + 0.05
 PIE_PERCENT_PRECISION = '%1.2f%%'
 
 # Colors on the pie and on the comparison charts
-WEIGHT_PLOT_NICKEL_STRIP_COLOR = 'grey'
-WEIGHT_PLOT_CELL_COLOR = 'royalblue'
-WEIGHT_PLOT_BATTERY_HOLDERS_COLOR = 'deeppink'
-WEIGHT_PLOT_BATTERY_PACK = "darkred"
+WEIGHT_PLOT_NICKEL_STRIP_COLOR = "grey"
+WEIGHT_PLOT_CELL_COLOR = "royalblue"
+WEIGHT_PLOT_BATTERY_HOLDERS_COLOR = "deeppink"
+WEIGHT_PLOT_BATTERY_PACK_COLOR = "darkred"
 
 PIE_LEGEND_LOCATION = "upper left"
-
 
 # Comparison between battery packs
 
 # The dimensions [left, bottom, width, height] of the axes.
 # All quantities are in fractions of figure width and height.
-COMPARISON_PLOT_DIMENSIONS = [0.2,0.06,0.8,0.8]
+COMPARISON_PLOT_DIMENSIONS = [0.1,0.06,0.8,0.8]
 BAR_WIDTH = 0.25
 
-PRICE_PLOT_CELLS_PRICE = 'gold'
-PRICE_PLOT_NICKEL_STRIP_PRICE = 'orange'
+PRICE_PLOT_CELLS_COLOR = "gold"
+PRICE_PLOT_NICKEL_STRIP_COLOR = "orange"
+
+PLOT_LEGEND_MARGIN = 8.0
+PLOT_FONT_SIZE = 0.03

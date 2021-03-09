@@ -46,8 +46,19 @@ class ShowChart(QtGui.QDialog):
 
         ax = fig.add_axes(COMPARISON_PLOT_DIMENSIONS)
 
-        ax.bar(X, packs_weight, color = WEIGHT_PLOT_BATTERY_PACK, width = BAR_WIDTH)
-        ax.bar(X + BAR_WIDTH, packs_total_battery_holders_weight, color = WEIGHT_PLOT_BATTERY_HOLDERS_COLOR, width = BAR_WIDTH)
+        ax.bar(
+                X,
+                packs_weight,
+                color = WEIGHT_PLOT_BATTERY_PACK,
+                width = BAR_WIDTH
+        )
+
+        ax.bar(
+            X + BAR_WIDTH,
+            packs_total_battery_holders_weight,
+            color = WEIGHT_PLOT_BATTERY_HOLDERS_COLOR,
+            width = BAR_WIDTH
+        )
         
         ax.bar(
             X + (BAR_WIDTH*2),
@@ -74,7 +85,13 @@ class ShowChart(QtGui.QDialog):
             WEIGHT_PLOT_BATTERY_HOLDERS_COLOR
         ]
         fig1, ax1 = plt.subplots()
-        weights = [p.total_nickel_strip_weight, p.total_cells_weight, p.total_battery_holders_weight]
+
+        weights = [
+            p.total_nickel_strip_weight,
+            p.total_cells_weight,
+            p.total_battery_holders_weight
+        ]
+        
         ax1.pie(
             weights,
             colors=colors,
@@ -90,12 +107,15 @@ class ShowChart(QtGui.QDialog):
             handles.append(
                 matplotlib.patches.Patch(color=colors[i], label=l)
                 )
+        
         ax1.legend(
             handles,
             labels=['%s : %1.1f g' % (l, s) for l, s in zip(labels, weights)],
             loc=PIE_LEGEND_LOCATION
         )
-        ax1.axis('equal') # Equal aspect ratio ensures that pie is drawn as a circle.
+
+        # Equal aspect ratio ensures that pie is drawn as a circle.
+        ax1.axis('equal')
         plt.show()
 
     def exitButtonClicked(self):

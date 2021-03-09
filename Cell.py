@@ -95,7 +95,6 @@ class Cell:
     # Mainly assigns the values from the .csv and put some default values when needed
     def __init__(self, model_number, freecad_dir):
         
-
         # IDENTIFICATION REF
         found = False    
         with open(freecad_dir+"Mod/battery_pack/identification_ref.csv", newline='') as csvfile:
@@ -165,5 +164,3 @@ class Cell:
             
     def getLineColor(self):
         return COLORS[preferences.DEFAULT_CELL_LINE_COLOR]
-
-   

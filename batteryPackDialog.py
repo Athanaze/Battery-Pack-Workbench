@@ -1,12 +1,12 @@
-from PySide import QtGui, QtCore
+from PySide import QtGui, QtCore # Exposed by FreeCAD
 from completerCreator import get_completer
 import FreeCAD as App
 import FreeCADGui as Gui
 import Part
 from Cell import Cell
 from preferences import *
-
-
+from utils import *
+import ImportGui
 
 class BatteryPackDialog(QtGui.QDialog):
 
@@ -20,10 +20,10 @@ class BatteryPackDialog(QtGui.QDialog):
         mainLayout = QtGui.QVBoxLayout()
 
         self.model = self.textFieldHelper(
-                                    "Model (Markings)",
-                                    " | Note : if you don't find the model in the autocomplete, you have to create a new cell first",
-                                    mainLayout
-                                    )
+                        "Model (Markings)",
+                        " | Note : if you don't find the model in the autocomplete, you have to create a new cell first",
+                        mainLayout
+                    )
 
         mainLayout.addWidget(self.model)
 
@@ -76,7 +76,8 @@ class BatteryPackDialog(QtGui.QDialog):
         pi = prop+'Integer'
         pl = prop+'Length'
 
-        self.part = App.activeDocument().addObject('App::Part',BATTERY_PACK_DEFAULT_PART_LABEL)
+        self.part = App.activeDocument().addObject('App::Part',generate_freecad_name())
+        self.part.Label = BATTERY_PACK_DEFAULT_PART_LABEL
         self.part.addProperty(pl, 'Width', 'Dimensions', 'Battery pack width').Width = '10 mm'
         self.part.addProperty(pi, 'serie', 'Cells arrangement', 'Cells in series').serie = s
         self.part.addProperty(pi, 'para', 'Cells arrangement', 'Cells in parallel').para = p
@@ -91,7 +92,7 @@ class BatteryPackDialog(QtGui.QDialog):
         self.part.addProperty(fl,
                             'total_nickel_strip_length',
                             "Connections",
-                            "Total nickel strip length").total_nickel_strip_length = 32.0
+                            "Total nickel strip length").total_nickel_strip_length = 0.0
         
         self.part.addProperty(pi, 'nc', 'Cell', 'Number of cells in the pack').nc = 0
         self.part.setExpression("nc", "serie*para")
@@ -169,24 +170,39 @@ class BatteryPackDialog(QtGui.QDialog):
             placement_of_last_cell = self.create3dCell(w, self.part.space_between_cells)
             App.ActiveDocument.recompute()
         
+        # Hacky way to import a .step model
+        # Source : <https://forum.freecadweb.org/viewtopic.php?f=3&t=3951>
+
+        current_instances = set(App.ActiveDocument.findObjects())
+        ImportGui.insert(get_mod_path(self.freecad_dir)+HOLDER_PATH, App.ActiveDocument.Name)
+        new_instances = set(App.ActiveDocument.findObjects()) - current_instances
+        
+        # Rotates the part 180 so the bottom of the holder is correctly placed
+        new_instances.pop().Placement = App.Placement(App.Vector(0,0,0), App.Rotation(0,180,0), App.Vector(0,0,0))
+        
         # Creates the nickel strips connecting all the cells in series
         
         # we multiply by 2 for the top and bottom strips
         self.part.setExpression(
             "total_nickel_strip_length",
             "2*(  ( (serie*((cell_radius*2)) ) + serie*(space_between_cells) ) - space_between_cells )"
-            )
+        )
 
-        self.create_nickel_strips(placement_of_last_cell)
+        # TEMPORARY
+        #self.create_nickel_strips(placement_of_last_cell)
        
         # Volume * weight per mm³
-        self.part.setExpression("total_nickel_strip_weight",
-                                "total_nickel_strip_length*nickel_strip_width*nickel_strip_height*nickel_strip_weight_per_mm3"
+        self.part.setExpression(
+            "total_nickel_strip_weight",
+            "total_nickel_strip_length*nickel_strip_width*nickel_strip_height*nickel_strip_weight_per_mm3"
         )
+        
         self.part.setExpression(
             "total_battery_holders_weight",
             "battery_holder_weight*nc*2"
-        )# One holder on top, one on the bottom
+        )
+        
+        # One holder on top, one on the bottom
         self.part.setExpression(
             "total_weight",
             "total_nickel_strip_weight+total_battery_holders_weight+total_cells_weight"
@@ -194,7 +210,12 @@ class BatteryPackDialog(QtGui.QDialog):
         
         ### Price ###
         self.part.setExpression("total_cells_price", "cell_price*nc")
-        self.part.setExpression("total_nickel_strip_price", "nickel_strip_price_per_mm*total_nickel_strip_length")
+        
+        self.part.setExpression(
+            "total_nickel_strip_price",
+            "nickel_strip_price_per_mm*total_nickel_strip_length"
+        )
+
         Gui.SendMsgToActiveView("ViewFit")
         App.ActiveDocument.recompute()
 
@@ -202,22 +223,38 @@ class BatteryPackDialog(QtGui.QDialog):
 
     def create_nickel_strips(self, placement_of_last_cell):
 
-        top_strip = self.setup_nickel_strip("Nickel_Strip_top", placement_of_last_cell)
-        top_strip.Placement.move(App.Vector(0, 0, -NICKEL_STRIP_HEIGHT))
-
         bottom_strip = self.setup_nickel_strip("Nickel_Strip_bottom", placement_of_last_cell)
-        bottom_strip.Placement.move(App.Vector(0, 0, self.cell.height+NICKEL_STRIP_HEIGHT))
+        bottom_strip.Placement.move(App.Vector(0, 0, -NICKEL_STRIP_HEIGHT))
+
+        top_strip = self.setup_nickel_strip("Nickel_Strip_top", placement_of_last_cell)
+        top_strip.Placement.move(App.Vector(0, 0, self.cell.height+NICKEL_STRIP_HEIGHT))
     
     def setup_nickel_strip(self, name, placement):
         nickel_strip = App.ActiveDocument.addObject("Part::Box",name)
         nickel_strip.ViewObject.LineColor = nickel_strip.ViewObject.PointColor = NICKEL_STRIP_LINE_POINT_COLOR
         nickel_strip.ViewObject.ShapeColor = NICKEL_STRIP_COLOR
-        nickel_strip.Length = self.part.total_nickel_strip_length / 2.0
+        
+        #nickel_strip.setExpression("Length", self.part.Name+".total_nickel_strip_length / 2.0")
+        
         nickel_strip.Width = NICKEL_STRIP_WIDTH
         nickel_strip.Height = NICKEL_STRIP_HEIGHT
         nickel_strip.Placement = placement
-        nickel_strip.Placement.move(App.Vector(-(nickel_strip.Length.Value-self.cell.radius), 0, 0))
+        print(placement)
+        nickel_strip.Placement.move(
+            App.Vector(
+                -(nickel_strip.Length.Value+(self.cell.radius*self.part.serie)),
+                0,
+                0
+            )
+        )
+        #nickel_strip.Placement.move(App.Vector((nickel_strip.Length.Value-self.cell.radius), 0, 0))
         nickel_strip.Placement.move(App.Vector(0, -self.cell.radius/2, 0))
+
+        # Set them as child of the yellow part
+        g = self.part.Group
+        g.append(nickel_strip)
+        self.part.Group = g
+        #nickel_strip.setExpression("Length", self.part.Name+".total_nickel_strip_length / 2.0")
         return nickel_strip
 
     # s : space between each cell
